@@ -32,7 +32,7 @@ if __name__ == '__main__':
 def predic():
     charstop = True # True means label attributes to previous char
     features = 3 # 1=discrete; 2=vectors; 3=both
-    dictfile = 'data/vector/24scbow50.txt'
+    dictfile = 'vector/24scbow50.txt'
     modelname = 'data24s1001.m'
     vdict = util.readvec(dictfile)
     inputtext = request.form.get('input_text','')
