@@ -85,3 +85,6 @@ def predic():
     output = score + '<br>' + output
 
     return (output)
+
+if __name__ == '__main__':
+    app.run()
