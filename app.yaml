@@ -1,11 +1,8 @@
-runtime: python
+runtime: python35
 api_version: 1
 threadsafe: true
 
-runtime_config:
-  python_version:3.5
-
 
 handlers:
-- url: /
+- url: /.*
   script: main.app
