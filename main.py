@@ -79,9 +79,9 @@ def predic():
     
     output = ''
     for line in lines:
-        #print (line.encode('utf8'))
+        print (line.encode('utf8'))
         output = output + '<br>' + line
-        #print (line)
+        print (line)
     output = score + '<br>' + output
 
     return (output)
