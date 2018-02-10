@@ -3,7 +3,7 @@ api_version: 1
 threadsafe: true
 
 runtime_config:
-  python_version:3
+    python_version: 3
 
 handlers:
 - url: /.*
