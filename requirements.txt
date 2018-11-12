@@ -8,5 +8,5 @@ Jinja2==2.9.5
 MarkupSafe==0.23
 Werkzeug==0.11.15
 cffi==1.10.0
-numpy==1.14.0
-python-crfsuite==0.9.5
+numpy==1.15.4
+python-crfsuite==0.9.6
