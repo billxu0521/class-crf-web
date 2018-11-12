@@ -12,16 +12,20 @@ import pycrfsuite
 import crf
 import util
 import datetime
+import json
 from urllib.parse import unquote
 from flask import Flask, jsonify
 from flask import render_template
 from config import DevConfig
 from flask import request
 from flask import abort
-
+from flask import render_template
+from flask_cors import CORS
 
 # 初始化 Flask 類別成為 instance
 app = Flask(__name__)
+CORS(app)
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 app.config.from_object(DevConfig)
 tasks = [
     {
@@ -74,14 +78,39 @@ def predic():
     print ("Start testing...")
     results = []
     lines = []
-    
+    Spp = []
+    Npp = []
     #while data:
     for index in range(len(data)):
+        print(len(data))
         xseq, yref = data.pop(0)
         yout = tagger.tag(xseq)
+        sp = 0
+        np = 0
+        for i in range(len(yout)):
+            sp = tagger.marginal('S',i)
+            Spp.append(sp) #S標記的機率
+            print(sp)
+            np = tagger.marginal('N',i) 
+            Npp.append(np)#Nㄅ標記的機率
+            print(np)
         results.append(util.eval(yref, yout, "S"))
-        lines.append(util.seq_to_line([x['gs0'] for x in xseq],yout,charstop))
-    
+        lines.append(util.seq_to_line([x['gs0'] for x in xseq],yout,charstop,Spp,Npp))
+        #print(util.seq_to_line([x['gs0'] for x in xseq], (str(sp) +'/'+ str(np)),charstop))
+
+    U_score = 0
+    p_Scount = 0
+    p_Ncount = 0
+    for i in range(len(Spp)):
+        _s = 0
+        if Spp[i] > Npp[i]:
+            _s = Spp[i]
+        else :_s = Npp[i]
+        _s = (_s - 0.5) * 10
+        U_score = U_score + _s
+        p_Scount = p_Scount + Spp[i]
+        p_Ncount = p_Ncount + Npp[i]
+   
     tp, fp, fn, tn = zip(*results)
     tp, fp, fn, tn = sum(tp), sum(fp), sum(fn), sum(tn)
     
@@ -93,13 +122,24 @@ def predic():
     score = score + '<br>' + "Presicion:" + repr(p)
     score = score + '<br>' + "Recall:" + repr(r)
     score = score + '<br>' + "*******************F1-score:" + repr(2*p*r/(p+r))
+    score = score + '<br>' + "======================="
+    score = score + '<br>' + "character count:" + str(len(Spp))
+    score = score + '<br>' +  "block uncertain rate:" + str((U_score / len(Spp)))
+
     
     output = ''
+    key = 0
     for line in lines:
-        print (line.encode('utf8'))
-        output = output + '<br>' + line
-        print (line)
-    output = score + '<br>' + output
+        #print (line.encode('utf8'))
+        
+        output = output + '<br>' + line 
+        #print (line)
+        key = key + 1
+        
+    #for index_m in ypp:
+      #  output = output + '<br>' + line
+
+    output = score + '<br>' + output 
 
     return (output)
 
@@ -132,14 +172,27 @@ def predic_api(inputtext):
     print ("Start testing...")
     results = []
     lines = []
-    
+    Spp = []
+    Npp = []
+    out = []
     #while data:
     for index in range(len(data)):
+        print(len(data))
         xseq, yref = data.pop(0)
         yout = tagger.tag(xseq)
+        sp = 0
+        np = 0
+        for i in range(len(yout)):
+            sp = tagger.marginal('S',i)
+            Spp.append(sp) #S標記的機率
+            print(sp)
+            np = tagger.marginal('N',i) 
+            Npp.append(np)#Nㄅ標記的機率
+            print(np)
         results.append(util.eval(yref, yout, "S"))
-        lines.append(util.seq_to_line([x['gs0'] for x in xseq],yout,charstop))
-    
+        lines.append(util.seq_to_line([x['gs0'] for x in xseq],yout,charstop,Spp,Npp))
+        #print(util.seq_to_line([x['gs0'] for x in xseq], (str(sp) +'/'+ str(np)),charstop))
+        out.append(yout)
     tp, fp, fn, tn = zip(*results)
     tp, fp, fn, tn = sum(tp), sum(fp), sum(fn), sum(tn)
     
@@ -162,13 +215,33 @@ def predic_api(inputtext):
         #output = output + '<br>' + line
         output += line
         print (line)
-    #output = score + '<br>' + output
+    output = score + '<br>' + output
 
     #output = jsonify({'str': output})
     
 
-    return (output)
+    return (out)
 
+
+@app.route('/signUp')
+def signUp():
+    return render_template('signUp.html')
+
+@app.route('/signUpUser', methods=['POST'])
+def signUpUser():
+    #user =  request.form['username'];
+    #password = request.form['password'];
+    text = request.form['input_text']
+    res = predic_api(text)
+    return json.dumps({'status':'OK','data':res});
+
+@app.route('/preseg', methods=['POST'])
+def preseg():
+    #user =  request.form['username'];
+    #password = request.form['password'];
+    text = request.form['input_text']    
+    res = predic_api(text)
+    return json.dumps({'status':'OK','data':res});
 
 @app.route('/api/str/<string:inputtext>', methods=['GET'])
 def get_task(inputtext):
